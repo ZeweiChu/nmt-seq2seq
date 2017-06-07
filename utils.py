@@ -1,12 +1,10 @@
 import logging
 import numpy as np
 from collections import Counter
-import itertools
 import torch.nn as nn
 import torch
 import code
 import os
-from six.moves import cPickle
 import nltk
 
 def load_data(in_file):
@@ -91,12 +89,6 @@ def gen_examples(en_sentences, cn_sentences, batch_size):
     return all_ex
 
 
-def to_contiguous(tensor):
-    if tensor.is_contiguous():
-        return tensor
-    else:
-        return tensor.contiguous()
-
 class LanguageModelCriterion(nn.Module):
     def __init__(self):
         super(LanguageModelCriterion, self).__init__()
@@ -110,17 +102,6 @@ class LanguageModelCriterion(nn.Module):
 
         return output
 
-class HingeModelCriterion(nn.Module):
-    def __init__(self):
-        super(HingeModelCriterion, self).__init__()
-
-    def forward(self, input, target, mask):
-        input = input.view(input.size(0)*input.size(1), input.size(2))
-        target = target.view(target.size(0)*target.size(1), 1)
-        correct = input.gather(1, target).expand_as(input)
-        loss = torch.sum(torch.sum(torch.max(input + 1  - correct, 0)[0], 1) - 1) / torch.sum(mask)
-
-        return loss
 
 
         

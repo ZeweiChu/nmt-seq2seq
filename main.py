@@ -1,5 +1,4 @@
 import sys, os
-import time
 import utils
 import config
 import code
@@ -12,8 +11,6 @@ from torch.nn import MSELoss
 from tqdm import tqdm
 import pickle
 import math
-from collections import Counter
-import time
 import nltk
 
 def translate(model, data, en_dict, inv_en_dict, cn_dict, inv_cn_dict):
