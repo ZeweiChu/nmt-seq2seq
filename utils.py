@@ -88,6 +88,11 @@ def gen_examples(en_sentences, cn_sentences, batch_size):
         all_ex.append((mb_x, mb_x_mask, mb_y, mb_y_mask))
     return all_ex
 
+def to_contiguous(tensor):
+    if tensor.is_contiguous():
+        return tensor
+    else:
+        return tensor.contiguous()
 
 class LanguageModelCriterion(nn.Module):
     def __init__(self):
