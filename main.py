@@ -1,54 +1,16 @@
 import sys, os
 import utils
 import config
+from models import *
 import code
 import numpy as np
-from models import *
-from torch.autograd import Variable
-import torch
-from torch import optim
-from torch.nn import MSELoss
-from tqdm import tqdm
 import pickle
 import math
 import nltk
-
-def translate(model, data, en_dict, inv_en_dict, cn_dict, inv_cn_dict):
-	for idx, (mb_x, mb_x_mask, mb_y, mb_y_mask) in enumerate(data):
-		B, T = mb_x.shape
-
-		mb_y = np.zeros((B, 1)).astype("int32")
-		mb_y[:, 0] = cn_dict["BOS"]
-		x = Variable(torch.from_numpy(mb_x)).long()
-		x_mask = Variable(torch.from_numpy(mb_x_mask)).long()
-		hidden = model.init_hidden(B)
-		mb_y = Variable(torch.from_numpy(mb_y)).long()
-		if args.use_cuda:
-			x = x.cuda()
-			x_mask = x_mask.cuda()
-			mb_y = mb_y.cuda()
-		pred_y = model.translate(x, x_mask, mb_y, hidden, max_length=args.translation_max_length)
-
-		if args.use_cuda:
-			pred_y = pred_y.cpu()
-		for i in range(B):
-			en = ""
-			for j in range(1, T):
-				word = inv_en_dict[mb_x[i][j]]
-				if word == "EOS":
-					break
-				en += inv_en_dict[mb_x[i][j]] + " "
-			print(en)
-			cn = ""
-			for j in range(1, args.translation_max_length):
-				word = inv_cn_dict[pred_y.data[i][j]]
-				if word == "EOS":
-					break
-				cn += word
-			print(cn)
-		# code.interact(local=locals())
-	
-
+from torch.autograd import Variable
+import torch
+from torch import optim
+from tqdm import tqdm
 
 def eval(model, data, args, crit):
 	total_dev_batches = len(data)
@@ -116,8 +78,6 @@ def main(args):
 	dev_en, dev_cn = utils.encode(dev_en, dev_cn, en_dict, cn_dict)
 	dev_data = utils.gen_examples(dev_en, dev_cn, args.batch_size)
 
-	# code.interact(local=locals())
-
 	if os.path.isfile(args.model_file):
 		model = torch.load(args.model_file)
 	elif args.model == "EncoderDecoderModel":
@@ -127,13 +87,9 @@ def main(args):
 		model = model.cuda()
 
 	crit = utils.LanguageModelCriterion()
+	learning_rate = args.learning_rate
+	optimizer = getattr(optim, args.optimizer)(model.parameters(), lr=learning_rate)
 
-	print("start evaluating on dev...")
-	translate(model, dev_data, en_dict, inv_en_dict, cn_dict, inv_cn_dict)
-	exit(-1)
-		# code.interact(local=locals())
-
-	
 	correct_count, loss, num_words = eval(model, dev_data, args, crit)
 
 	loss = loss / num_words
@@ -141,14 +97,11 @@ def main(args):
 	print("dev loss %s" % (loss) )
 	print("dev accuracy %f" % (acc))
 	print("dev total number of words %f" % (num_words))
-	best_acc = acc
-
-	learning_rate = args.learning_rate
-	optimizer = getattr(optim, args.optimizer)(model.parameters(), lr=learning_rate)
+	best_acc = acc	
 	
 	total_num_sentences = 0.
 	total_time = 0.
-	for epoch in range(args.num_epoches):
+	for epoch in range(args.num_epochs):
 		np.random.shuffle(train_data)
 		total_train_loss = 0.
 		total_num_words = 0.
@@ -180,11 +133,10 @@ def main(args):
 			optimizer.zero_grad()
 			loss.backward()
 			optimizer.step()
+
 		print("training loss: %f" % (total_train_loss / total_num_words))
 
 		if (epoch+1) % args.eval_epoch == 0:
-			
-
 			print("start evaluating on dev...")
 	
 			correct_count, loss, num_words = eval(model, dev_data, args, crit)
@@ -198,7 +150,6 @@ def main(args):
 			if acc >= best_acc:
 				torch.save(model, args.model_file)
 				best_acc = acc
-
 				print("model saved...")
 			else:
 				learning_rate *= 0.5
@@ -207,8 +158,9 @@ def main(args):
 			print("best dev accuracy: %f" % best_acc)
 			print("#" * 60)
 
+
 	test_en, test_cn = utils.load_data(args.test_file)
-	args.num_test = len(test_sentences)
+	args.num_test = len(test_en)
 	test_en, test_cn = utils.encode(test_en, test_cn, en_dict, cn_dict)
 	test_data = utils.gen_examples(test_en, test_cn, args.batch_size)
 	correct_count, loss, num_words = eval(model, test_data, args, crit)
@@ -217,13 +169,6 @@ def main(args):
 	print("test loss %s" % (loss) )
 	print("test accuracy %f" % (acc))
 	print("test total number of words %f" % (num_words))
-
-	correct_count, loss, num_words = eval(model, train_data, args, crit)
-	loss = loss / num_words
-	acc = correct_count / num_words
-	print("train loss %s" % (loss) )
-	print("train accuracy %f" % (acc))
-
 
 if __name__ == "__main__":
 	args = config.get_args()
