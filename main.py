@@ -160,7 +160,7 @@ def main(args):
 
 
 	test_en, test_cn = utils.load_data(args.test_file)
-	args.num_test = len(test_sentences)
+	args.num_test = len(test_en)
 	test_en, test_cn = utils.encode(test_en, test_cn, en_dict, cn_dict)
 	test_data = utils.gen_examples(test_en, test_cn, args.batch_size)
 	correct_count, loss, num_words = eval(model, test_data, args, crit)
