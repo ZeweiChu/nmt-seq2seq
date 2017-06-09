@@ -68,10 +68,10 @@ def get_args():
 
     # training details
 
-    parser.add_argument('--num_epoches',
+    parser.add_argument('--num_epochs',
                         type=int,
-                        default=100,
-                        help='Number of epoches')
+                        default=10,
+                        help='Number of epochs')
 
     parser.add_argument('--eval_epoch',
                         type=int,

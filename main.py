@@ -1,6 +1,7 @@
 import sys, os
 import utils
 import config
+from models import *
 import code
 import numpy as np
 import pickle
@@ -49,21 +50,12 @@ def main(args):
 
 	crit = utils.LanguageModelCriterion()
 
-	correct_count, loss, num_words = eval(model, dev_data, args, crit)
-
-	loss = loss / num_words
-	acc = correct_count / num_words
-	print("dev loss %s" % (loss) )
-	print("dev accuracy %f" % (acc))
-	print("dev total number of words %f" % (num_words))
-	best_acc = acc
-
 	learning_rate = args.learning_rate
 	optimizer = getattr(optim, args.optimizer)(model.parameters(), lr=learning_rate)
 	
 	total_num_sentences = 0.
 	total_time = 0.
-	for epoch in range(args.num_epoches):
+	for epoch in range(args.num_epochs):
 		np.random.shuffle(train_data)
 		total_train_loss = 0.
 		total_num_words = 0.
@@ -97,7 +89,7 @@ def main(args):
 			optimizer.step()
 
 		epoch += 1
-		if epoch % args.max_epochs == 0:
+		if epoch % args.num_epochs == 0:
 			break 
 		print("training loss: %f" % (total_train_loss / total_num_words))
 
