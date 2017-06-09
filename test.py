@@ -19,10 +19,10 @@ def translate(model, data, en_dict, inv_en_dict, cn_dict, inv_cn_dict):
 
 		mb_y = np.zeros((B, 1)).astype("int32")
 		mb_y[:, 0] = cn_dict["BOS"]
-		x = Variable(torch.from_numpy(mb_x)).long()
-		x_mask = Variable(torch.from_numpy(mb_x_mask)).long()
+		x = Variable(torch.from_numpy(mb_x), volatile=True).long()
+		x_mask = Variable(torch.from_numpy(mb_x_mask), volatile=True).long()
 		hidden = model.init_hidden(B)
-		mb_y = Variable(torch.from_numpy(mb_y)).long()
+		mb_y = Variable(torch.from_numpy(mb_y), volatile=True).long()
 		if args.use_cuda:
 			x = x.cuda()
 			x_mask = x_mask.cuda()
