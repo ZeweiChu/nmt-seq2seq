@@ -6,6 +6,11 @@ import numpy as np
 import pickle
 import math
 import nltk
+from torch.autograd import Variable
+import torch
+from torch import optim
+from torch.nn import MSELoss
+from tqdm import tqdm
 
 def main(args):
 
@@ -35,3 +40,66 @@ def main(args):
 	dev_data = utils.gen_examples(dev_en, dev_cn, args.batch_size)
 
 	code.interact(local=locals())
+
+	if os.path.isfile(args.model_file):
+		model = torch.load(args.model_file)
+	elif args.model == "EncoderDecoderModel":
+		model = EncoderDecoderModel(args)
+
+	if args.use_cuda:
+		model = model.cuda()
+
+	crit = utils.LanguageModelCriterion()
+
+	correct_count, loss, num_words = eval(model, dev_data, args, crit)
+
+	loss = loss / num_words
+	acc = correct_count / num_words
+	print("dev loss %s" % (loss) )
+	print("dev accuracy %f" % (acc))
+	print("dev total number of words %f" % (num_words))
+	best_acc = acc
+
+	learning_rate = args.learning_rate
+	optimizer = getattr(optim, args.optimizer)(model.parameters(), lr=learning_rate)
+	
+	total_num_sentences = 0.
+	total_time = 0.
+	for epoch in range(args.num_epoches):
+		np.random.shuffle(train_data)
+		total_train_loss = 0.
+		total_num_words = 0.
+		for idx, (mb_x, mb_x_mask, mb_y, mb_y_mask) in tqdm(enumerate(train_data)):
+
+			batch_size = mb_x.shape[0]
+			total_num_sentences += batch_size
+			mb_x = Variable(torch.from_numpy(mb_x)).long()
+			mb_x_mask = Variable(torch.from_numpy(mb_x_mask)).long()
+			hidden = model.init_hidden(batch_size)
+			mb_input = Variable(torch.from_numpy(mb_y[:,:-1])).long()
+			mb_out = Variable(torch.from_numpy(mb_y[:, 1:])).long()
+			mb_out_mask = Variable(torch.from_numpy(mb_y_mask[:, 1:]))
+
+			if args.use_cuda:
+				mb_x = mb_x.cuda()
+				mb_x_mask = mb_x_mask.cuda()
+				mb_input = mb_input.cuda()
+				mb_out = mb_out.cuda()
+				mb_out_mask = mb_out_mask.cuda()
+			
+			mb_pred, hidden = model(mb_x, mb_x_mask, mb_input, hidden)
+
+			loss = crit(mb_pred, mb_out, mb_out_mask)
+			num_words = torch.sum(mb_out_mask).data[0]
+			total_train_loss += loss.data[0] * num_words
+			total_num_words += num_words
+	
+			optimizer.zero_grad()
+			loss.backward()
+			optimizer.step()
+		print("training loss: %f" % (total_train_loss / total_num_words))
+
+
+if __name__ == "__main__":
+	args = config.get_args()
+	main(args)

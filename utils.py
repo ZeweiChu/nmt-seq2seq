@@ -84,3 +84,22 @@ def gen_examples(en_sentences, cn_sentences, batch_size):
         mb_y, mb_y_mask = prepare_data(mb_cn_sentences)
         all_ex.append((mb_x, mb_x_mask, mb_y, mb_y_mask))
     return all_ex
+
+def to_contiguous(tensor):
+    if tensor.is_contiguous():
+        return tensor
+    else:
+        return tensor.contiguous()
+
+class LanguageModelCriterion(nn.Module):
+    def __init__(self):
+        super(LanguageModelCriterion, self).__init__()
+
+    def forward(self, input, target, mask):
+        input = to_contiguous(input).view(-1, input.size(2))
+        target = to_contiguous(target).view(-1, 1)
+        mask = to_contiguous(mask).view(-1, 1)
+        output = -input.gather(1, target) * mask
+        output = torch.sum(output) / torch.sum(mask)
+
+        return output
