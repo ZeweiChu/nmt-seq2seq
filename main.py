@@ -35,3 +35,7 @@ def main(args):
 	dev_data = utils.gen_examples(dev_en, dev_cn, args.batch_size)
 
 	code.interact(local=locals())
+
+if __name__ == "__main__":
+	args = config.get_args()
+	main(args)
