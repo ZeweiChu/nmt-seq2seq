@@ -217,7 +217,6 @@ def main(args):
 	print("test loss %s" % (loss) )
 	print("test accuracy %f" % (acc))
 	print("test total number of words %f" % (num_words))
-	print("#sents/sec: %f" % (total_num_sentences/total_time) )
 
 	correct_count, loss, num_words = eval(model, train_data, args, crit)
 	loss = loss / num_words

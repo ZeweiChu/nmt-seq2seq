@@ -1,4 +1,4 @@
-# Sequence to sequence model for neural machine translation
+# [Sequence to sequence model for neural machine translation](https://github.com/ZeweiChu/nmt-seq2seq)
 
 ### requirements: 
 - python 3.6
