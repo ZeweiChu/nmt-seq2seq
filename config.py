@@ -81,11 +81,6 @@ def get_args():
                         default=1,
                         help='Evaluation on dev set after K epochs')
 
-    parser.add_argument('--dropout_rate',
-                        type=float,
-                        default=0.2,
-                        help='Dropout rate')
-
     parser.add_argument('--optimizer',
                         type=str,
                         default='Adam',
