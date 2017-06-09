@@ -46,21 +46,3 @@ class EncoderDecoderModel(nn.Module):
         decoded = F.log_softmax(decoded)
         return decoded.view(hiddens.size(0), hiddens.size(1), decoded.size(1)), hiddens
 
-    def translate(self, x, x_mask, y, hidden, max_length = 20):
-        x_embedded = self.embed_en(x)
-        # encoder
-        hiddens, (h, c) = self.encoder(x_embedded, hidden)
-        
-        pred = [y]
-        for i in range(max_length-1):
-            # code.interact(local=locals())
-            y_embedded = self.embed_cn(y)
-            hiddens, (h, c) = self.decoder(y_embedded, hx=(h, c))
-            hiddens = hiddens.contiguous()
-            # output layer
-            decoded = self.linear(hiddens.view(hiddens.size(0)*hiddens.size(1), hiddens.size(2)))
-            decoded = F.log_softmax(decoded)
-            decoded = decoded.view(hiddens.size(0), decoded.size(1))
-            y = torch.max(decoded, 1)[1]
-            pred.append(y)
-        return torch.cat(pred, 1)

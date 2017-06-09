@@ -39,8 +39,6 @@ def main(args):
 	dev_en, dev_cn = utils.encode(dev_en, dev_cn, en_dict, cn_dict)
 	dev_data = utils.gen_examples(dev_en, dev_cn, args.batch_size)
 
-	code.interact(local=locals())
-
 	if os.path.isfile(args.model_file):
 		model = torch.load(args.model_file)
 	elif args.model == "EncoderDecoderModel":
@@ -97,6 +95,10 @@ def main(args):
 			optimizer.zero_grad()
 			loss.backward()
 			optimizer.step()
+
+		epoch += 1
+		if epoch % args.max_epochs == 0:
+			break 
 		print("training loss: %f" % (total_train_loss / total_num_words))
 
 
