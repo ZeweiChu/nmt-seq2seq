@@ -1,8 +1,23 @@
 import argparse
 
 def get_args():
+    # Basics
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--use_cuda',
+                        type=int,
+                        default=0,
+                        help='use cuda GPU or not 0|1')
+
+    parser.add_argument('--model_file',
+                        type=str,
+                        default="model.th",
+                        help='model file')
+
+    parser.add_argument('--model',
+                        type=str,
+                        default="HingeModelCriterion",
+                        help='choose the loss criterion')
 
     # Data file
     parser.add_argument('--train_file',
@@ -24,33 +39,18 @@ def get_args():
                         type=str,
                         default="vocab.pkl",
                         help='dictionary file')
-   
+
     parser.add_argument('--vocab_size', 
                         type=int,
                         default=50000,
                         help='maximum number of vocabulary')
 
-    parser.add_argument('--batch_size',
+    parser.add_argument('--translation_max_length', 
                         type=int,
-                        default=64,
-                        help='Batch size')
+                        default=20,
+                        help='translation max length')
 
     # Model details
-    parser.add_argument('--use_cuda',
-                        type=int,
-                        default=0,
-                        help='use cuda GPU or not 0|1')
-
-    parser.add_argument('--model_file',
-                        type=str,
-                        default="model.th",
-                        help='model file')
-
-    parser.add_argument('--model',
-                        type=str,
-                        default="HingeModelCriterion",
-                        help='choose the loss criterion')
-
     parser.add_argument('--embedding_size',
                         type=int,
                         default=300,
@@ -66,12 +66,16 @@ def get_args():
                         default=1,
                         help='Number of RNN layers')
 
-    # training details
-
-    parser.add_argument('--num_epochs',
+    # Optimization details
+    parser.add_argument('--batch_size',
                         type=int,
-                        default=10,
-                        help='Number of epochs')
+                        default=64,
+                        help='Batch size')
+
+    parser.add_argument('--num_epoches',
+                        type=int,
+                        default=100,
+                        help='Number of epoches')
 
     parser.add_argument('--eval_epoch',
                         type=int,
@@ -87,5 +91,5 @@ def get_args():
                         type=float,
                         default=0.1,
                         help='Learning rate for SGD')
-  
+
     return parser.parse_args()
