@@ -3,6 +3,11 @@ from collections import Counter
 import code
 import os
 import nltk
+import torch
+import torch.nn as nn
+from torch.nn import Parameter 
+import torch.nn.functional as F
+from torch.autograd import Variable
 
 def load_data(in_file):
     cn = []
