@@ -10,8 +10,46 @@ import nltk
 from torch.autograd import Variable
 import torch
 from torch import optim
-from torch.nn import MSELoss
 from tqdm import tqdm
+
+def eval(model, data, args, crit):
+	total_dev_batches = len(data)
+	correct_count = 0.
+	# bar = progressbar.ProgressBar(max_value=total_dev_batches).start()
+	loss = 0.
+	total_num_words = 0.
+
+	print("total %d" % total_dev_batches)
+	total_num_words = 0.
+	for idx, (mb_x, mb_x_mask, mb_y, mb_y_mask) in enumerate(data):
+		# code.interact(local=locals())
+		batch_size = mb_x.shape[0]
+		mb_x = Variable(torch.from_numpy(mb_x), volatile=True).long()
+		mb_x_mask = Variable(torch.from_numpy(mb_x_mask), volatile=True).long()
+		hidden = model.init_hidden(batch_size)
+		mb_input = Variable(torch.from_numpy(mb_y[:,:-1]), volatile=True).long()
+		mb_out = Variable(torch.from_numpy(mb_y[:, 1:]), volatile=True).long()
+		mb_out_mask = Variable(torch.from_numpy(mb_y_mask[:, 1:]), volatile=True)
+		if args.use_cuda:
+			mb_x = mb_x.cuda()
+			mb_x_mask = mb_x_mask.cuda()
+			mb_input = mb_input.cuda()
+			mb_out = mb_out.cuda()
+			mb_out_mask = mb_out_mask.cuda()
+		
+		mb_pred, hidden = model(mb_x, mb_x_mask, mb_input, hidden)
+		num_words = torch.sum(mb_out_mask).data[0]
+		loss += crit(mb_pred, mb_out, mb_out_mask).data[0] * num_words
+
+		total_num_words += num_words
+		
+
+		mb_pred = torch.max(mb_pred.view(mb_pred.size(0) * mb_pred.size(1), mb_pred.size(2)), 1)[1]
+		# code.interact(local=locals())
+		correct = (mb_pred == mb_out).float()
+
+		correct_count += torch.sum(correct * mb_out_mask.contiguous().view(mb_out_mask.size(0) * mb_out_mask.size(1), 1)).data[0]
+	return correct_count, loss, total_num_words
 
 def main(args):
 
@@ -49,9 +87,17 @@ def main(args):
 		model = model.cuda()
 
 	crit = utils.LanguageModelCriterion()
-
 	learning_rate = args.learning_rate
 	optimizer = getattr(optim, args.optimizer)(model.parameters(), lr=learning_rate)
+
+	correct_count, loss, num_words = eval(model, dev_data, args, crit)
+
+	loss = loss / num_words
+	acc = correct_count / num_words
+	print("dev loss %s" % (loss) )
+	print("dev accuracy %f" % (acc))
+	print("dev total number of words %f" % (num_words))
+	best_acc = acc	
 	
 	total_num_sentences = 0.
 	total_time = 0.
@@ -88,11 +134,41 @@ def main(args):
 			loss.backward()
 			optimizer.step()
 
-		epoch += 1
-		if epoch % args.num_epochs == 0:
-			break 
 		print("training loss: %f" % (total_train_loss / total_num_words))
 
+		if (epoch+1) % args.eval_epoch == 0:
+			print("start evaluating on dev...")
+	
+			correct_count, loss, num_words = eval(model, dev_data, args, crit)
+
+			loss = loss / num_words
+			acc = correct_count / num_words
+			print("dev loss %s" % (loss) )
+			print("dev accuracy %f" % (acc))
+			print("dev total number of words %f" % (num_words))
+
+			if acc >= best_acc:
+				torch.save(model, args.model_file)
+				best_acc = acc
+				print("model saved...")
+			else:
+				learning_rate *= 0.5
+				optimizer = getattr(optim, args.optimizer)(model.parameters(), lr=learning_rate)
+
+			print("best dev accuracy: %f" % best_acc)
+			print("#" * 60)
+
+
+	test_en, test_cn = utils.load_data(args.test_file)
+	args.num_test = len(test_sentences)
+	test_en, test_cn = utils.encode(test_en, test_cn, en_dict, cn_dict)
+	test_data = utils.gen_examples(test_en, test_cn, args.batch_size)
+	correct_count, loss, num_words = eval(model, test_data, args, crit)
+	loss = loss / num_words
+	acc = correct_count / num_words
+	print("test loss %s" % (loss) )
+	print("test accuracy %f" % (acc))
+	print("test total number of words %f" % (num_words))
 
 if __name__ == "__main__":
 	args = config.get_args()
