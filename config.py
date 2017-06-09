@@ -1,29 +1,7 @@
 import argparse
 
-def str2bool(v):
-    return v.lower() in ('yes', 'true', 't', '1', 'y')
-
-
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.register('type', 'bool', str2bool)
-
-    parser.add_argument('--test_only',
-                        type='bool',
-                        default=False,
-                        help='test_only: no need to run training process')
-
-
-    parser.add_argument('--model_file',
-                        type=str,
-                        default="model.th",
-                        help='model file')
-
-    parser.add_argument('--model',
-                        type=str,
-                        default="HingeModelCriterion",
-                        help='choose the loss criterion')
-
 
 
     # Data file
@@ -46,63 +24,15 @@ def get_args():
                         type=str,
                         default="vocab.pkl",
                         help='dictionary file')
-
-    parser.add_argument('--embedding_file',
-                        type=str,
-                        default=None,
-                        help='Word embedding file')
-
    
     parser.add_argument('--vocab_size', 
                         type=int,
                         default=50000,
                         help='maximum number of vocabulary')
 
-    parser.add_argument('--translation_max_length', 
-                        type=int,
-                        default=20,
-                        help='translation max length')
-
- 
-    # Model details
-    parser.add_argument('--embedding_size',
-                        type=int,
-                        default=300,
-                        help='Default embedding size if embedding_file is not given')
-
-    
-    parser.add_argument('--hidden_size',
-                        type=int,
-                        default=128,
-                        help='Hidden size of RNN units')
-
-    
-    parser.add_argument('--num_layers',
-                        type=int,
-                        default=1,
-                        help='Number of RNN layers')
-
-    
-    # Optimization details
     parser.add_argument('--batch_size',
                         type=int,
                         default=64,
                         help='Batch size')
-
-    parser.add_argument('--num_epoches',
-                        type=int,
-                        default=100,
-                        help='Number of epoches')
-
-    parser.add_argument('--optimizer',
-                        type=str,
-                        default='Adam',
-                        help='Optimizer: sgd or adam (default) or rmsprop')
-
-    parser.add_argument('--learning_rate', '-lr',
-                        type=float,
-                        default=0.1,
-                        help='Learning rate for SGD')
-
-    
+  
     return parser.parse_args()
