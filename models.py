@@ -19,7 +19,7 @@ class EncoderDecoderModel(nn.Module):
         self.encoder = nn.LSTM(args.embedding_size, args.hidden_size, batch_first=True)
         self.decoder = nn.LSTM(args.embedding_size, args.hidden_size, batch_first=True)
 
-        self.linear = nn.Linear(self.nhid, args.vocab_size)
+        self.linear = nn.Linear(self.nhid, args.cn_total_words)
         self.linear.bias.data.fill_(0)
         self.linear.weight.data.uniform_(-0.1, 0.1)
 

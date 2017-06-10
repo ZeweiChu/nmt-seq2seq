@@ -54,13 +54,13 @@ def eval(model, data, args, crit):
 
 def main(args):
 
+	# load sentences (English and Chinese words)
 	train_en, train_cn = utils.load_data(args.train_file)
 	dev_en, dev_cn = utils.load_data(args.dev_file)
 	args.num_train = len(train_en)
 	args.num_dev = len(dev_en)
 
-	# code.interact(local=locals())
-
+	# build English and Chinese dictionary
 	if os.path.isfile(args.vocab_file):
 		en_dict, cn_dict, en_total_words, cn_total_words = pickle.load(open(args.vocab_file, "rb"))
 	else:
@@ -70,10 +70,13 @@ def main(args):
 
 	args.en_total_words = en_total_words
 	args.cn_total_words = cn_total_words
+	# index to words dict
 	inv_en_dict = {v: k for k, v in en_dict.items()}
 	inv_cn_dict = {v: k for k, v in cn_dict.items()}
 
+	# encode train and dev sentences into indieces
 	train_en, train_cn = utils.encode(train_en, train_cn, en_dict, cn_dict)
+	# convert to numpy tensors
 	train_data = utils.gen_examples(train_en, train_cn, args.batch_size)
 
 	dev_en, dev_cn = utils.encode(dev_en, dev_cn, en_dict, cn_dict)
@@ -114,6 +117,7 @@ def main(args):
 
 			batch_size = mb_x.shape[0]
 			total_num_sentences += batch_size
+			# convert numpy ndarray to PyTorch tensors and variables
 			mb_x = Variable(torch.from_numpy(mb_x)).long()
 			mb_x_mask = Variable(torch.from_numpy(mb_x_mask)).long()
 			hidden = model.init_hidden(batch_size)
@@ -140,6 +144,7 @@ def main(args):
 			optimizer.step()
 		print("training loss: %f" % (total_train_loss / total_num_words))
 
+		# evaluate every eval_epoch
 		if (epoch+1) % args.eval_epoch == 0:
 			
 
@@ -153,6 +158,7 @@ def main(args):
 			print("dev accuracy %f" % (acc))
 			print("dev total number of words %f" % (num_words))
 
+			# save model if we have the best accuracy
 			if acc >= best_acc:
 				torch.save(model, args.model_file)
 				best_acc = acc
@@ -165,10 +171,13 @@ def main(args):
 			print("best dev accuracy: %f" % best_acc)
 			print("#" * 60)
 
+	# load test data
 	test_en, test_cn = utils.load_data(args.test_file)
 	args.num_test = len(test_en)
 	test_en, test_cn = utils.encode(test_en, test_cn, en_dict, cn_dict)
 	test_data = utils.gen_examples(test_en, test_cn, args.batch_size)
+
+	# evaluate on test
 	correct_count, loss, num_words = eval(model, test_data, args, crit)
 	loss = loss / num_words
 	acc = correct_count / num_words
@@ -176,6 +185,7 @@ def main(args):
 	print("test accuracy %f" % (acc))
 	print("test total number of words %f" % (num_words))
 
+	# evaluate on train
 	correct_count, loss, num_words = eval(model, train_data, args, crit)
 	loss = loss / num_words
 	acc = correct_count / num_words
