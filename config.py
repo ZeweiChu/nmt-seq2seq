@@ -16,8 +16,8 @@ def get_args():
 
     parser.add_argument('--model',
                         type=str,
-                        default="HingeModelCriterion",
-                        help='choose the loss criterion')
+                        default="EncoderDecoderModel",
+                        help='Model')
 
     # Data file
     parser.add_argument('--train_file',
