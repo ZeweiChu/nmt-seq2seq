@@ -12,11 +12,10 @@ class EncoderDecoderModel(nn.Module):
     def __init__(self, args):
         super(EncoderDecoderModel, self).__init__()
         self.nhid = args.hidden_size
-        self.nlayers = args.num_layers
 
         self.embed_en = nn.Embedding(args.en_total_words, args.embedding_size)
         self.embed_cn = nn.Embedding(args.cn_total_words, args.embedding_size)
-        self.encoder = nn.LSTM(args.embedding_size, args.hidden_size, batch_first=True)
+        self.encoder = nn.LSTMCell(args.embedding_size, args.hidden_size)
         self.decoder = nn.LSTM(args.embedding_size, args.hidden_size, batch_first=True)
 
         self.linear = nn.Linear(self.nhid, args.cn_total_words)
@@ -28,16 +27,31 @@ class EncoderDecoderModel(nn.Module):
 
     def init_hidden(self, bsz):
         weight = next(self.parameters()).data
-        return (Variable(weight.new(self.nlayers, bsz, self.nhid).zero_()),
-                Variable(weight.new(self.nlayers, bsz, self.nhid).zero_()))
+        return (Variable(weight.new(bsz, self.nhid).zero_()),
+                Variable(weight.new(bsz, self.nhid).zero_()))
 
     def forward(self, x, x_mask, y, hidden):
+        
         x_embedded = self.embed_en(x)
+        B, T, embedding_size = x_embedded.size()
         # encoder
-        hiddens, (h, c) = self.encoder(x_embedded, hidden)
-        y_embedded = self.embed_cn(y)
+        hiddens = []
+        cells = []
+        for i in range(T):
+            hidden = self.encoder(x_embedded[:,i,:], hidden)
+            hiddens.append(hidden[0].unsqueeze(1))
+            cells.append(hidden[1].unsqueeze(1))
+        
+        hiddens = torch.cat(hiddens, 1)
+        cells = torch.cat(cells, 1)
+        x_lengths = x_mask.sum(1).unsqueeze(2).expand(B, 1, embedding_size)-1
+        h = hiddens.gather(1, x_lengths).permute(1,0,2)
+        c = cells.gather(1, x_lengths).permute(1,0,2)
 
         # decoder
+        
+        y_embedded = self.embed_cn(y)
+        # code.interact(local=locals())
         hiddens, (h, c) = self.decoder(y_embedded, hx=(h, c))
 
         hiddens = hiddens.contiguous()
@@ -48,9 +62,21 @@ class EncoderDecoderModel(nn.Module):
 
     def translate(self, x, x_mask, y, hidden, max_length = 20):
         x_embedded = self.embed_en(x)
+        B, T, embedding_size = x_embedded.size()
         # encoder
-        hiddens, (h, c) = self.encoder(x_embedded, hidden)
+        hiddens = []
+        cells = []
+        for i in range(T):
+            hidden = self.encoder(x_embedded[:,i,:], hidden)
+            hiddens.append(hidden[0].unsqueeze(1))
+            cells.append(hidden[1].unsqueeze(1))
         
+        hiddens = torch.cat(hiddens, 1)
+        cells = torch.cat(cells, 1)
+        x_lengths = x_mask.sum(1).unsqueeze(2).expand(B, 1, embedding_size)-1
+        h = hiddens.gather(1, x_lengths).permute(1,0,2)
+        c = cells.gather(1, x_lengths).permute(1,0,2)
+
         pred = [y]
         for i in range(max_length-1):
             # code.interact(local=locals())
