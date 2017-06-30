@@ -88,9 +88,6 @@ def main(args):
 			loss.backward()
 			optimizer.step()
 
-		epoch += 1
-		if epoch % args.num_epochs == 0:
-			break 
 		print("training loss: %f" % (total_train_loss / total_num_words))
 
 
