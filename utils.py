@@ -108,5 +108,20 @@ class LanguageModelCriterion(nn.Module):
         return output
 
 
-
+class LinearND(nn.Module):
+    def __init__(self, *args, **kwargs):
+        """
+        A torch.nn.Linear layer modified to accept ND arrays.
+        The function treats the last dimension of the input
+        as the hidden dimension.
+        """
+        super(LinearND, self).__init__()
+        self.fc = nn.Linear(*args, **kwargs)
+    def forward(self, x):
+        size = x.size()
+        out = x.view(-1,size[-1])
+        out = self.fc(out)
+        size = list(size)
+        size[-1] = out.size()[-1]
+        return out.view(size)
         

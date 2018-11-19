@@ -1,56 +1,19 @@
 import sys, os
-import utils
-import config
 import code
 import numpy as np
-from models import *
-from torch.autograd import Variable
-import torch
-from torch import optim
-from torch.nn import MSELoss
 from tqdm import tqdm
 import pickle
 import math
 import nltk
 
-def eval(model, data, args, crit):
-	total_dev_batches = len(data)
-	correct_count = 0.
-	# bar = progressbar.ProgressBar(max_value=total_dev_batches).start()
-	loss = 0.
-	total_num_words = 0.
+from test import eval
+from models import *
+import utils
+import config
 
-	print("total %d" % total_dev_batches)
-	total_num_words = 0.
-	for idx, (mb_x, mb_x_mask, mb_y, mb_y_mask) in enumerate(data):
-		# code.interact(local=locals())
-		batch_size = mb_x.shape[0]
-		mb_x = Variable(torch.from_numpy(mb_x), volatile=True).long()
-		mb_x_mask = Variable(torch.from_numpy(mb_x_mask), volatile=True).long()
-		hidden = model.init_hidden(batch_size)
-		mb_input = Variable(torch.from_numpy(mb_y[:,:-1]), volatile=True).long()
-		mb_out = Variable(torch.from_numpy(mb_y[:, 1:]), volatile=True).long()
-		mb_out_mask = Variable(torch.from_numpy(mb_y_mask[:, 1:]), volatile=True)
-		if args.use_cuda:
-			mb_x = mb_x.cuda()
-			mb_x_mask = mb_x_mask.cuda()
-			mb_input = mb_input.cuda()
-			mb_out = mb_out.cuda()
-			mb_out_mask = mb_out_mask.cuda()
-		
-		mb_pred, hidden = model(mb_x, mb_x_mask, mb_input, hidden)
-		num_words = torch.sum(mb_out_mask).data[0]
-		loss += crit(mb_pred, mb_out, mb_out_mask).data[0] * num_words
+import torch
+from torch import optim
 
-		total_num_words += num_words
-		
-
-		mb_pred = torch.max(mb_pred.view(mb_pred.size(0) * mb_pred.size(1), mb_pred.size(2)), 1)[1]
-		# code.interact(local=locals())
-		correct = (mb_pred == mb_out).float()
-
-		correct_count += torch.sum(correct * mb_out_mask.contiguous().view(mb_out_mask.size(0) * mb_out_mask.size(1), 1)).data[0]
-	return correct_count, loss, total_num_words
 
 def main(args):
 
@@ -82,7 +45,6 @@ def main(args):
 	dev_en, dev_cn = utils.encode(dev_en, dev_cn, en_dict, cn_dict)
 	dev_data = utils.gen_examples(dev_en, dev_cn, args.batch_size)
 
-	# code.interact(local=locals())
 
 	if os.path.isfile(args.model_file):
 		model = torch.load(args.model_file)
@@ -118,12 +80,12 @@ def main(args):
 			batch_size = mb_x.shape[0]
 			total_num_sentences += batch_size
 			# convert numpy ndarray to PyTorch tensors and variables
-			mb_x = Variable(torch.from_numpy(mb_x)).long()
-			mb_x_mask = Variable(torch.from_numpy(mb_x_mask)).long()
+			mb_x = torch.from_numpy(mb_x).long()
+			mb_x_mask = torch.from_numpy(mb_x_mask).long()
 			hidden = model.init_hidden(batch_size)
-			mb_input = Variable(torch.from_numpy(mb_y[:,:-1])).long()
-			mb_out = Variable(torch.from_numpy(mb_y[:, 1:])).long()
-			mb_out_mask = Variable(torch.from_numpy(mb_y_mask[:, 1:]))
+			mb_input = torch.from_numpy(mb_y[:,:-1]).long()
+			mb_out = torch.from_numpy(mb_y[:, 1:]).long()
+			mb_out_mask = torch.from_numpy(mb_y_mask[:, 1:])
 
 			if args.use_cuda:
 				mb_x = mb_x.cuda()
@@ -135,13 +97,14 @@ def main(args):
 			mb_pred, hidden = model(mb_x, mb_x_mask, mb_input, hidden)
 
 			loss = crit(mb_pred, mb_out, mb_out_mask)
-			num_words = torch.sum(mb_out_mask).data[0]
-			total_train_loss += loss.data[0] * num_words
+			num_words = torch.sum(mb_out_mask).item()
+			total_train_loss += loss.item() * num_words
 			total_num_words += num_words
 	
 			optimizer.zero_grad()
 			loss.backward()
 			optimizer.step()
+
 		print("training loss: %f" % (total_train_loss / total_num_words))
 
 		# evaluate every eval_epoch

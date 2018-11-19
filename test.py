@@ -4,11 +4,8 @@ import config
 import code
 import numpy as np
 from models import *
-from torch.autograd import Variable
 import torch
 from torch import optim
-from torch.nn import MSELoss
-from tqdm import tqdm
 import pickle
 import math
 import nltk
@@ -19,10 +16,10 @@ def translate(model, data, en_dict, inv_en_dict, cn_dict, inv_cn_dict):
 
 		mb_y = np.zeros((B, 1)).astype("int32")
 		mb_y[:, 0] = cn_dict["BOS"]
-		x = Variable(torch.from_numpy(mb_x), volatile=True).long()
-		x_mask = Variable(torch.from_numpy(mb_x_mask), volatile=True).long()
+		x = torch.from_numpy(mb_x).long()
+		x_mask = torch.from_numpy(mb_x_mask).long()
 		hidden = model.init_hidden(B)
-		mb_y = Variable(torch.from_numpy(mb_y), volatile=True).long()
+		mb_y = torch.from_numpy(mb_y).long()
 		if args.use_cuda:
 			x = x.cuda()
 			x_mask = x_mask.cuda()
@@ -31,6 +28,8 @@ def translate(model, data, en_dict, inv_en_dict, cn_dict, inv_cn_dict):
 
 		if args.use_cuda:
 			pred_y = pred_y.cpu()
+
+		pred_y = pred_y.data.numpy()
 		for i in range(B):
 			en = ""
 			for j in range(1, T):
@@ -41,7 +40,7 @@ def translate(model, data, en_dict, inv_en_dict, cn_dict, inv_cn_dict):
 			print(en)
 			cn = ""
 			for j in range(1, args.translation_max_length):
-				word = inv_cn_dict[pred_y.data[i][j]]
+				word = inv_cn_dict[pred_y[i][j]]
 				if word == "EOS":
 					break
 				cn += word
@@ -49,25 +48,25 @@ def translate(model, data, en_dict, inv_en_dict, cn_dict, inv_cn_dict):
 		# code.interact(local=locals())
 	
 
-
 def eval(model, data, args, crit):
 	total_dev_batches = len(data)
 	correct_count = 0.
-	# bar = progressbar.ProgressBar(max_value=total_dev_batches).start()
-	loss = 0.
+	total_loss = 0.
 	total_num_words = 0.
 
 	print("total %d" % total_dev_batches)
 	total_num_words = 0.
 	for idx, (mb_x, mb_x_mask, mb_y, mb_y_mask) in enumerate(data):
-		# code.interact(local=locals())
+		
 		batch_size = mb_x.shape[0]
-		mb_x = Variable(torch.from_numpy(mb_x), volatile=True).long()
-		mb_x_mask = Variable(torch.from_numpy(mb_x_mask), volatile=True).long()
+		mb_x = torch.from_numpy(mb_x).long()
+		mb_x_mask = torch.from_numpy(mb_x_mask).long()
+
 		hidden = model.init_hidden(batch_size)
-		mb_input = Variable(torch.from_numpy(mb_y[:,:-1]), volatile=True).long()
-		mb_out = Variable(torch.from_numpy(mb_y[:, 1:]), volatile=True).long()
-		mb_out_mask = Variable(torch.from_numpy(mb_y_mask[:, 1:]), volatile=True)
+		mb_input = torch.from_numpy(mb_y[:,:-1]).long()
+		mb_out = torch.from_numpy(mb_y[:, 1:]).long()
+		mb_out_mask = torch.from_numpy(mb_y_mask[:, 1:])
+		
 		if args.use_cuda:
 			mb_x = mb_x.cuda()
 			mb_x_mask = mb_x_mask.cuda()
@@ -75,19 +74,22 @@ def eval(model, data, args, crit):
 			mb_out = mb_out.cuda()
 			mb_out_mask = mb_out_mask.cuda()
 		
-		mb_pred, hidden = model(mb_x, mb_x_mask, mb_input, hidden)
-		num_words = torch.sum(mb_out_mask).data[0]
-		loss += crit(mb_pred, mb_out, mb_out_mask).data[0] * num_words
+		with torch.no_grad():
+			mb_pred, hidden = model(mb_x, mb_x_mask, mb_input, hidden)
+
+		num_words = torch.sum(mb_out_mask).item()
+		batch_loss = crit(mb_pred, mb_out, mb_out_mask).item() 
+
+		total_loss += batch_loss * num_words
 
 		total_num_words += num_words
 		
 
 		mb_pred = torch.max(mb_pred.view(mb_pred.size(0) * mb_pred.size(1), mb_pred.size(2)), 1)[1]
-		# code.interact(local=locals())
-		correct = (mb_pred == mb_out).float()
+		correct = (mb_pred.view(-1) == mb_out.view(-1)).float()
 
-		correct_count += torch.sum(correct * mb_out_mask.contiguous().view(mb_out_mask.size(0) * mb_out_mask.size(1), 1)).data[0]
-	return correct_count, loss, total_num_words
+		correct_count += torch.sum(correct * mb_out_mask.contiguous().view(-1)).item()
+	return correct_count, total_loss, total_num_words
 
 def main(args):
 

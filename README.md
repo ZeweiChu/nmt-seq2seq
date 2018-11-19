@@ -2,7 +2,7 @@
 
 ### requirements: 
 - python 3.6
-- pytorch 
+- pytorch 0.4.0
 - nltk
 - tqdm
 
