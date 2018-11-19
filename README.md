@@ -21,6 +21,7 @@
 
 ### TODO
 - add attention to the currently very basic model
+- add beam search at inference 
 
 
 ### Bug report

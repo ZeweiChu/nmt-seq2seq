@@ -4,7 +4,7 @@ def get_args():
     # Basics
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--use_cuda', type=int, default=0, help='use cuda GPU or not 0|1')
+    parser.add_argument('--use_cuda', action="store_true", help='use cuda GPU or not')
     parser.add_argument('--model_file', type=str, default="model.th", help='model file')
     parser.add_argument('--model', type=str, default="EncoderDecoderModel", help='Model')
 
@@ -20,7 +20,7 @@ def get_args():
     parser.add_argument('--embedding_size', type=int, default=300, help='Default embedding size if embedding_file is not given')
     parser.add_argument('--hidden_size', type=int, default=128, help='Hidden size of RNN units')
     parser.add_argument('--num_layers', type=int, default=1, help='Number of RNN layers')
-    
+
     # Optimization details
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
     parser.add_argument('--num_epoches', type=int, default=100, help='Number of epoches')
