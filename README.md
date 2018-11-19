@@ -6,11 +6,15 @@
 - nltk
 - tqdm
 
+### What's included
+- A vanilla seq2seq model implemented in PyTorch
+- A keras version is stored in ```keras/```. The code is copied from [The Keras official tutorial](https://github.com/keras-team/keras/blob/master/examples/lstm_seq2seq.py)
+
 ### How to use
 - To train the model, simply run
 	./run.sh
 - To test the model
-	.run_test.sh
+	./run_test.sh
 - To see what config options you have
 	python main.py --help
 
