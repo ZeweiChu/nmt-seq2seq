@@ -11,6 +11,7 @@
 - A keras version is stored in ```keras/```. The code is copied from [The Keras official tutorial](https://github.com/keras-team/keras/blob/master/examples/lstm_seq2seq.py)
 
 ### How to use
+- Go to directory ```pytorch```
 - To train the model, simply run
 	./run.sh
 - To test the model
