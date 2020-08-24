@@ -1,5 +1,8 @@
 # [Sequence to sequence model for neural machine translation](https://github.com/ZeweiChu/nmt-seq2seq)
 
+### Announcement
+这个project是基于PyTorch 0.4.0版本写的。由于现在的PyTorch已经升级到了[1.6.0](https://pytorch.org/)版本，很多代码的写法不太符合最新的版本，所以欢迎大家重写我的代码然后send pull request！
+
 ### requirements: 
 - python 3.6
 - pytorch 0.4.0
